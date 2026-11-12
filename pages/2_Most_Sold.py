@@ -2,14 +2,16 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from db import get_connection
+from ui import apply_style
 
-st.title("Most Sold Items")
+apply_style()
+st.title("Sales report")
+st.caption("Items ranked by the number of units sold.")
 conn = get_connection()
-query = "SELECT i.name AS item, SUM(s.quantity) AS units_sold FROM sales s JOIN items i ON i.id = s.item_id GROUP BY i.id, i.name ORDER BY units_sold DESC"
-df = pd.read_sql(query, conn)
+df = pd.read_sql("SELECT item_id, MAX(items.name) AS item, SUM(sales.quantity) AS units_sold FROM sales JOIN items ON items.id = sales.item_id GROUP BY item_id ORDER BY units_sold DESC", conn)
 conn.close()
 if df.empty:
-    st.info("No sales recorded yet.")
+    st.info("No completed bills yet.")
 else:
-    st.plotly_chart(px.bar(df, x="item", y="units_sold", title="Units sold by item", labels={"item": "Item", "units_sold": "Units sold"}), use_container_width=True)
-    
+    st.plotly_chart(px.bar(df, x="item", y="units_sold", labels={"item": "Item", "units_sold": "Units sold"}, color_discrete_sequence=["#a64c34"]), use_container_width=True)
+    st.dataframe(df[["item", "units_sold"]], use_container_width=True, hide_index=True)
